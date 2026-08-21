@@ -1,0 +1,43 @@
+{
+ "index": {
+  "ancestral genomes": "edam:topic_3943",
+  "biome sequencing": "edam:topic_3174",
+  "community genomics": "edam:topic_3174",
+  "comparative genomics": "edam:topic_0797",
+  "comparative transcriptomics": "edam:topic_3308",
+  "ecogenomics": "edam:topic_3174",
+  "environmental genomics": "edam:topic_3174",
+  "environmental omics": "edam:topic_3174",
+  "environmental sequencing": "edam:topic_3174",
+  "epigenomics": "edam:topic_3173",
+  "epistasis": "edam:topic_3974",
+  "epistatic genetic interaction": "edam:topic_3974",
+  "epistatic interactions": "edam:topic_3974",
+  "exomes": "edam:topic_0622",
+  "functional genomics": "edam:topic_0085",
+  "genome annotation": "edam:topic_0622",
+  "genomes": "edam:topic_0622",
+  "genomics": "edam:topic_0622",
+  "metagenomics": "edam:topic_3174",
+  "metatranscriptomics": "edam:topic_3308",
+  "paleogenetics": "edam:topic_3943",
+  "paleogenomics": "edam:topic_3943",
+  "personal genomics": "edam:topic_0622",
+  "pharmacogenetics": "edam:topic_0208",
+  "pharmacogenomics": "edam:topic_0208",
+  "phylogenomics": "edam:topic_0194",
+  "population genomics": "edam:topic_3796",
+  "proteogenomics": "edam:topic_3922",
+  "shotgun metagenomics": "edam:topic_3174",
+  "structural genomics": "edam:topic_0122",
+  "synthetic genomics": "edam:topic_0622",
+  "transcriptome": "edam:topic_3308",
+  "transcriptomics": "edam:topic_3308",
+  "viral genomics": "edam:topic_0622",
+  "whole genomes": "edam:topic_0622"
+ },
+ "roots": [
+  "http://edamontology.org/topic_0622"
+ ],
+ "source": "EDAM (edamontology.org/EDAM.csv)"
+}

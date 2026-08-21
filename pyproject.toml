@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "indicium-adapters-genomics"
+version = "0.1.0"
+description = "Genomics DomainAdapter for the indicium ecosystem: EDAM-backed concept enrichment and classification vocabulary"
+readme = "README.md"
+# 3.11, not 3.12: this must be installable into the AgenticScienceBuilder
+# environment, which is where the classification vocabulary it feeds is consumed.
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+keywords = ["genomics", "sequencing", "EDAM", "indicium", "ontology", "SSSOM"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = ["indicium-adapters>=0.5.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[project.entry-points."indicium.adapters"]
+genomics = "indicium_adapters_genomics.genomics:GenomicsAdapter"
+
+[project.urls]
+Homepage = "https://github.com/HolobiomicsLab/indicium-adapters-genomics"
+Repository = "https://github.com/HolobiomicsLab/indicium-adapters-genomics"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/indicium_adapters_genomics"]
