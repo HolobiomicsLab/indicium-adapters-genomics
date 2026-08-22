@@ -2,28 +2,23 @@
 
 The invariants every indicium DomainAdapter must hold, plus the two this
 adapter exists to satisfy for ASB: it declares ``primary_domain`` (without it a
-proteomics paper classifies as "other"), and it resolves concepts only by exact
+genomics paper classifies as "other"), and it resolves concepts only by exact
 match (a wrong CURIE is worse than no CURIE).
 """
 
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from urllib.parse import urlparse
 
-import pytest
 from indicium_adapters import CURRENT_API_VERSION, DomainAdapter
 
-from indicium_adapters_genomics import GenomicsAdapter
+from indicium_adapters_genomics import parse_gff3_to_claims, parse_vcf_to_claims
 
 SNAKE_CASE = re.compile(r"^[a-z][a-z0-9_]*$")
 SLUG = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 PREFIX_TERMINATORS = (":", "/", "_", "#")
-
-
-@pytest.fixture
-def adapter() -> GenomicsAdapter:
-    return GenomicsAdapter()
 
 
 def test_satisfies_the_domain_adapter_protocol(adapter):
@@ -95,10 +90,12 @@ def test_unresolved_text_is_recorded_not_silently_dropped(adapter):
 
 
 def test_substring_of_a_concept_does_not_resolve(adapter):
-    """'Sequence assem' must not pick up 'Sequence assembly' — a wrong CURIE is
-    worse than no CURIE."""
-    out = adapter.enrich_claim({"subject": "Sequence assem"})
-    assert "ontology_terms" not in out
+    """A prefix of a real index entry must not pick that entry up — a wrong
+    CURIE is worse than no CURIE. Both strings below are proper substrings of
+    concepts the shipped index does carry, so the test fails if matching ever
+    loosens; a string absent from the index altogether would prove nothing."""
+    for prefix in ("comparative genom", "genomic"):
+        assert adapter.enrich_claim({"subject": prefix}).get("ontology_terms") is None
 
 
 def test_an_already_resolved_slot_is_left_to_its_owner(adapter):
@@ -111,3 +108,27 @@ def test_empty_and_non_string_slots_are_skipped(adapter):
     out = adapter.enrich_claim({"subject": "", "object": None, "qualifier": 42})
     assert "ontology_terms" not in out
     assert "ontology_terms_unmatched" not in out
+
+
+def test_the_claim_shapes_this_domain_needs_have_a_qualifier(adapter):
+    """Variant calls, expression contrasts, assembly metrics and annotation."""
+    for qualifier in (
+        "variant_called_by",
+        "genotyped_as",
+        "has_consequence",
+        "differentially_expressed_in",
+        "has_assembly_metric",
+        "annotated_by",
+        "located_on",
+        "has_feature",
+    ):
+        assert qualifier in adapter.qualifiers
+
+
+def test_the_projections_only_emit_declared_qualifiers(adapter):
+    """A parser inventing a qualifier would put claims outside the vocabulary."""
+    fixtures = Path(__file__).parent / "fixtures"
+    claims = parse_vcf_to_claims(fixtures / "sample.vcf")
+    claims += parse_gff3_to_claims(fixtures / "sample.gff3")
+    emitted = {claim["qualifier"] for claim in claims}
+    assert emitted <= adapter.qualifiers

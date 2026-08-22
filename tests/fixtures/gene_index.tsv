@@ -1,0 +1,4 @@
+symbol	hgnc	ensembl	ncbigene	name
+HBB	HGNC:4827	ENSG00000244734	3043	hemoglobin subunit beta
+TP53	HGNC:11998	ENSG00000141510	7157	tumor protein p53
+				blank symbol row that must be skipped

@@ -1,9 +1,9 @@
 """Vendored EDAM label index — the concept spine for the genomics adapter.
 
-Generated offline from ``edamontology.org/EDAM.csv`` by ``scripts/build_index.py``
-and shipped as a package resource, so enrichment is a pure function with no
-network call at runtime. ``data/edam_index.json`` records the ontology roots the
-index was cut from, alongside the label map itself.
+Generated offline from EDAM by ``data/build_edam_index.py`` and shipped as a
+package resource, so enrichment is a pure function with no network call at
+runtime. ``data/edam_index.json`` records the ontology roots the index was cut
+from and the sub-topic slugs read off the same walk, alongside the label map.
 """
 
 from __future__ import annotations
@@ -40,6 +40,11 @@ def lookup(text: str) -> str | None:
 def roots() -> tuple[str, ...]:
     """The EDAM classes this index was cut from — provenance for the vocabulary."""
     return tuple(_payload()["roots"])
+
+
+def subtopics() -> tuple[str, ...]:
+    """The kebab-case slugs of the EDAM topics under the index's domain root."""
+    return tuple(_payload()["subtopics"])
 
 
 def size() -> int:

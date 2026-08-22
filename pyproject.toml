@@ -4,14 +4,18 @@ build-backend = "hatchling.build"
 
 [project]
 name = "indicium-adapters-genomics"
-version = "0.1.0"
-description = "Genomics DomainAdapter for the indicium ecosystem: EDAM-backed concept enrichment and classification vocabulary"
+version = "0.3.0"
+description = "Genomics DomainAdapter for the indicium ecosystem: classification vocabulary, identifier/ontology claim enrichment, and VCF + GFF3 claim projections"
 readme = "README.md"
 # 3.11, not 3.12: this must be installable into the AgenticScienceBuilder
 # environment, which is where the classification vocabulary it feeds is consumed.
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
-keywords = ["genomics", "sequencing", "EDAM", "indicium", "ontology", "SSSOM"]
+authors = [{ name = "Louis-Felix Nothias", email = "louis-felix.nothias@cnrs.fr" }]
+keywords = [
+  "genomics", "sequencing", "variant-calling", "annotation",
+  "vcf", "gff3", "EDAM", "HGNC", "indicium", "ontology", "SSSOM",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
@@ -31,6 +35,31 @@ genomics = "indicium_adapters_genomics.genomics:GenomicsAdapter"
 [project.urls]
 Homepage = "https://github.com/HolobiomicsLab/indicium-adapters-genomics"
 Repository = "https://github.com/HolobiomicsLab/indicium-adapters-genomics"
+Issues = "https://github.com/HolobiomicsLab/indicium-adapters-genomics/issues"
+Changelog = "https://github.com/HolobiomicsLab/indicium-adapters-genomics/blob/main/CHANGELOG.md"
+
+# Local-dev resolution for the sibling repos (neither is on PyPI). uv-only and
+# stripped from the published wheel; mirrors indicium-adapters' own table.
+# Without this, `uv pip install -e .` cannot resolve indicium-adapters at all.
+[tool.uv.sources]
+indicium-standard = { path = "../indicium", editable = true }
+indicium-adapters = { path = "../indicium-adapters", editable = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/indicium_adapters_genomics"]
+
+# gene_index.tsv is gitignored, and hatchling excludes VCS-ignored files from a
+# build by default. Without this the wheel would silently ship no nomenclature
+# even after a maintainer regenerated the index.
+artifacts = ["src/indicium_adapters_genomics/data/gene_index.tsv"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --strict-markers"

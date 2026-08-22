@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: indicium-adapters-genomics
+message: "If you use this software, please cite it as below."
+type: software
+version: 0.3.0
+date-released: "2026-08-22"
+authors:
+  - family-names: Nothias
+    given-names: Louis-Felix
+    email: louis-felix.nothias@cnrs.fr
+    orcid: "https://orcid.org/0000-0001-6699-8731"
+repository-code: "https://github.com/HolobiomicsLab/indicium-adapters-genomics"
+license: MIT
+keywords:
+  - genomics
+  - sequencing
+  - variant-calling
+  - annotation
+  - vcf
+  - gff3
+  - indicium
+  - ontology
+abstract: >-
+  Genomics DomainAdapter for the indicium ecosystem. Contributes the
+  classification vocabulary (primary_domain, EDAM-derived subdomains,
+  curated techniques and claim qualifiers), exact-match claim enrichment
+  over identifier grammars, HGNC gene nomenclature and EDAM concept
+  labels, and VCF + GFF3 projections into ASB claim dicts.

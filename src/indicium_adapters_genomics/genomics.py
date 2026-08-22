@@ -1,34 +1,93 @@
-"""GenomicsAdapter — the genomics DomainAdapter (api_version=1)."""
+"""GenomicsAdapter -- the genomics DomainAdapter (api_version=1)."""
 
 from __future__ import annotations
 
-from typing import Final
+from dataclasses import dataclass
+from typing import Final, NamedTuple
 
-from . import _edam
+from . import _edam, _identifiers
+from ._genes import GENE_INDEX, GeneIndex
+from ._namespaces import GENOMICS_PREFIXES
 
-_ENRICHABLE_SLOTS: Final[tuple[str, ...]] = ("subject", "object", "qualifier")
+_QUALIFIER_SLOT: Final[str] = "qualifier"
+
+_ENRICHABLE_SLOTS: Final[tuple[str, ...]] = ("subject", "object", _QUALIFIER_SLOT)
 
 _LEXICAL: Final[str] = "semapv:LexicalMatching"
+_COMPOSITE: Final[str] = "semapv:CompositeMatching"
 
-# EDAM's Genomics topic DOES carry sub-topics, so unlike the sibling proteomics
-# adapter this vocabulary is the field's own hierarchy rather than an editor's
-# list. Read from EDAM at index-build time and frozen here so the runtime stays
-# a pure function; regenerate with scripts/build_index.py on an EDAM release.
-_EDAM_SUBTOPICS: Final[tuple[str, ...]] = (
-    "comparative-genomics",
-    "epigenomics",
-    "epistasis",
-    "functional-genomics",
-    "metagenomics",
-    "metatranscriptomics",
-    "paleogenomics",
-    "pharmacogenomics",
-    "phylogenomics",
-    "population-genomics",
-    "proteogenomics",
-    "structural-genomics",
-    "transcriptomics",
-)
+
+class _Resolution(NamedTuple):
+    """One slot's resolution: the CURIE, its SEMAPV justification, its xrefs."""
+
+    curie: str
+    justification: str
+    xrefs: dict[str, str]
+
+
+@dataclass
+class _Enrichment:
+    """The four enrichment maps of a claim, accumulated slot by slot."""
+
+    terms: dict[str, str]
+    justifications: dict[str, str]
+    unmatched: dict[str, str]
+    xrefs: dict[str, dict[str, str]]
+
+    @classmethod
+    def from_claim(cls, claim: dict) -> _Enrichment:
+        """Copy the maps out of ``claim`` so the caller's dicts are never shared."""
+        return cls(
+            terms=dict(claim.get("ontology_terms") or {}),
+            justifications=dict(claim.get("ontology_term_justifications") or {}),
+            unmatched=dict(claim.get("ontology_terms_unmatched") or {}),
+            xrefs=dict(claim.get("xrefs") or {}),
+        )
+
+    def record(self, slot: str, resolution: _Resolution) -> None:
+        """Attach ``resolution`` to ``slot``, clearing any earlier miss on it."""
+        self.terms[slot] = resolution.curie
+        self.justifications[slot] = resolution.justification
+        self.unmatched.pop(slot, None)
+        if resolution.xrefs:
+            self.xrefs[slot] = resolution.xrefs
+
+    def miss(self, slot: str, text: str) -> None:
+        """Record that ``slot`` carried text which resolved to nothing."""
+        self.unmatched[slot] = text
+
+    def apply_to(self, claim: dict) -> None:
+        """Write every non-empty map back onto ``claim``."""
+        for key, value in (
+            ("ontology_terms", self.terms),
+            ("ontology_term_justifications", self.justifications),
+            ("ontology_terms_unmatched", self.unmatched),
+            ("xrefs", self.xrefs),
+        ):
+            if value:
+                claim[key] = value
+
+
+def _resolve_text(text: str, gene_index: GeneIndex) -> _Resolution | None:
+    """Resolve one slot's text to a CURIE, or None when no resolver claims it.
+
+    The three resolvers run in decreasing order of certainty: an identifier
+    grammar first, because a string that *is* an rsID is a syntactic fact rather
+    than a guess and is therefore justified as a composite match; then the gene
+    nomenclature index; then the EDAM concept labels. Every step is exact --
+    substring or fuzzy matching over an authority manufactures confident-looking
+    wrong CURIEs, and a wrong identifier is worse than no identifier.
+    """
+    identifier = _identifiers.resolve(text)
+    if identifier:
+        return _Resolution(identifier, _COMPOSITE, {})
+    gene = gene_index.resolve(text)
+    if gene:
+        return _Resolution(gene.principal, _LEXICAL, gene.xrefs)
+    concept = _edam.lookup(text)
+    if concept:
+        return _Resolution(concept, _LEXICAL, {})
+    return None
 
 
 class GenomicsAdapter:
@@ -36,19 +95,22 @@ class GenomicsAdapter:
 
     Owns the tier-3 concerns only (ADR 0001): classification vocabulary and
     claim/ontology enrichment. It deliberately does **not** recognise repository
-    accessions (SRA, ENA, GEO, BioProject) — those belong to the canonical
-    accession table in ``asb-domain-core``, and a second copy of those patterns
-    here would be the duplicate-then-drift failure ADR 0001 exists to prevent.
-    What this adapter contributes for identifiers is ``ontology_prefixes``, so a
-    consumer can expand the CURIEs that tier produces.
+    accessions (SRA, ENA, GEO, BioProject) in article text -- those belong to the
+    canonical accession table in ``asb-domain-core``, and a second copy of those
+    patterns here would be the duplicate-then-drift failure ADR 0001 exists to
+    prevent. What this adapter contributes for identifiers is ``ontology_prefixes``
+    so a consumer can expand the CURIEs that tier produces, plus full-match
+    recognition of *entity* identifiers (variant, gene, transcript, protein)
+    already sitting in a claim slot.
 
-    ``subdomains`` are read from EDAM's own Genomics branch rather than
-    hand-listed, so the vocabulary is the field's and moves with an EDAM release.
+    ``subdomains`` are read off the same EDAM walk that builds the concept index
+    rather than hand-listed, so the vocabulary is the field's, moves with an EDAM
+    release, and cannot drift from the labels ``enrich_claim`` resolves against.
     ``techniques`` are curated: EDAM models assays as operations and data rather
     than as a technique hierarchy, so there is nothing to derive.
 
     Every qualifier matches ``^[a-z][a-z0-9_]*$`` (snake_case), required because
-    Perspicacité routes adapter qualifiers onto the open ``asb:domainQualifier``
+    Perspicacite routes adapter qualifiers onto the open ``asb:domainQualifier``
     slot whose SHACL shape enforces that pattern.
     """
 
@@ -66,43 +128,38 @@ class GenomicsAdapter:
             "basecalled_by",  # object is the basecaller (long-read)
             "polished_with",  # object is the consensus-polishing tool
             "scaffolded_by",  # object is the scaffolding evidence or tool
+            "has_assembly_metric",  # object is a contiguity or completeness value
             # --- Variation ------------------------------------------------------
             "variant_called_by",  # object is the variant caller
             "genotyped_as",  # object is the genotype or allele
             "phased_by",  # object is the phasing method
             "imputed_from",  # object is the reference panel
+            "has_consequence",  # object is a Sequence Ontology consequence term
             "associated_with",  # object is a trait or phenotype (GWAS)
             "segregates_with",  # object is a pedigree or population
             # --- Annotation and function ----------------------------------------
             "annotated_by",  # object is the annotation pipeline or database
+            "identifies",  # object is the authority identifier for the subject
             "predicted_to_encode",  # object is a gene product or feature
             "orthologous_to",
             "located_on",  # object is a chromosome, contig or scaffold
+            "has_feature",  # object is a nested child feature
             "regulated_by",  # object is a regulatory element or factor
+            # --- Expression ------------------------------------------------------
+            "differentially_expressed_in",  # object is the contrast or condition
             # --- Validation ------------------------------------------------------
             "validated_by",  # object is an orthogonal assay
         }
     )
 
-    ontology_prefixes: dict[str, str] = {
-        "SO": "http://purl.obolibrary.org/obo/SO_",
-        "GENO": "http://purl.obolibrary.org/obo/GENO_",
-        "GO": "http://purl.obolibrary.org/obo/GO_",
-        "OBI": "http://purl.obolibrary.org/obo/OBI_",
-        "EFO": "http://www.ebi.ac.uk/efo/EFO_",
-        "NCBITaxon": "http://purl.obolibrary.org/obo/NCBITaxon_",
-        "UBERON": "http://purl.obolibrary.org/obo/UBERON_",
-        "ensembl": "http://identifiers.org/ensembl/",
-        "refseq": "http://identifiers.org/refseq/",
-        "edam": "http://edamontology.org/",
-    }
+    ontology_prefixes: dict[str, str] = dict(GENOMICS_PREFIXES)
 
     @property
     def subdomains(self) -> tuple[str, ...]:
         """EDAM's own sub-topics of Genomics, lower-cased and hyphenated."""
-        return _EDAM_SUBTOPICS
+        return _edam.subtopics()
 
-    # Curated — EDAM has no technique hierarchy to read.
+    # Curated -- EDAM has no technique hierarchy to read.
     techniques: tuple[str, ...] = (
         "whole-genome-sequencing",
         "whole-exome-sequencing",
@@ -122,53 +179,81 @@ class GenomicsAdapter:
         "crispr-screen",
     )
 
+    def __init__(self, gene_index: GeneIndex | None = None) -> None:
+        """Build the adapter, optionally over a caller-supplied gene index.
+
+        ``gene_index`` defaults to the module-level index, which reads
+        ``data/gene_index.tsv`` if a maintainer has generated one and is empty
+        otherwise -- the file is deliberately not shipped (see :mod:`._genes`).
+        Pass one to resolve symbols against nomenclature data the caller already
+        holds instead.
+        """
+        self._gene_index = gene_index or GENE_INDEX
+
+    @property
+    def gene_index(self) -> GeneIndex:
+        """The index backing gene-symbol resolution.
+
+        Read ``.is_available`` before reporting a symbol as unresolved: an empty
+        index means "no nomenclature installed", not "no such gene".
+        """
+        return self._gene_index
+
     # ---- protocol methods --------------------------------------------------
 
     def extraction_context(self) -> str:
+        """Return the domain instructions handed to the extraction model."""
         return (
-            "Domain: genomics — sequencing, assembly, variation and annotation. "
+            "Domain: genomics -- sequencing, assembly, variation and annotation. "
             "Name subjects and objects with EDAM and Sequence Ontology "
             "terminology where one applies (for example 'sequence assembly', "
             "'variant calling'), using the singular preferred label rather than a "
             "paraphrase. Prefer a concrete tool, assembly or panel name over a "
             "generic word: 'GRCh38' rather than 'the reference', 'GATK "
             "HaplotypeCaller' rather than 'the caller'. Keep a gene, its "
-            "transcript and its protein product distinct. Domain qualifiers "
-            "available in addition to the base set: "
+            "transcript and its protein product distinct. Quote an identifier in "
+            "the form its authority issues it -- rs334, ENSG00000139618, "
+            "NM_000546.6, VCV000012345 -- rather than describing it. Domain "
+            "qualifiers available in addition to the base set: "
             + ", ".join(sorted(self.qualifiers))
             + "."
         )
 
-    def enrich_claim(self, claim: dict) -> dict:
-        """Attach EDAM CURIEs to the slots whose text names an EDAM concept.
+    def _is_own_vocabulary(self, slot: str, value: str) -> bool:
+        """Whether ``value`` is one of this adapter's own declared qualifiers.
 
-        Pure: returns a new dict and never mutates the input. A slot that carries
-        text but resolves to nothing is recorded under
-        ``ontology_terms_unmatched`` rather than passed over, so "not an EDAM
-        concept" stays distinguishable from "no attempt was made".
+        A declared qualifier is vocabulary, not entity text. Resolving it can
+        only ever miss, so recording the miss would put an unmatched entry on
+        every single claim and leave the map useless as a signal.
+        """
+        return slot == _QUALIFIER_SLOT and value.strip() in self.qualifiers
+
+    def enrich_claim(self, claim: dict) -> dict:
+        """Attach CURIEs to the claim slots whose text names a resolvable entity.
+
+        Pure: returns a new dict and never mutates the input or its nested maps.
+        A slot that carries text but resolves to nothing is recorded under
+        ``ontology_terms_unmatched`` rather than passed over, so "not a known
+        entity" stays distinguishable from "no attempt was made" -- except for a
+        qualifier drawn from this adapter's own set, which is vocabulary rather
+        than entity text and is skipped outright. A gene symbol additionally
+        populates ``xrefs[slot]`` with every cross-reference the nomenclature
+        row carries.
         """
         out = dict(claim)
-        terms: dict[str, str] = dict(out.get("ontology_terms") or {})
-        justifications: dict[str, str] = dict(out.get("ontology_term_justifications") or {})
-        unmatched: dict[str, str] = dict(out.get("ontology_terms_unmatched") or {})
-
+        enrichment = _Enrichment.from_claim(out)
         for slot in _ENRICHABLE_SLOTS:
-            if slot in terms:
+            if slot in enrichment.terms:
                 continue
             value = out.get(slot)
             if not isinstance(value, str) or not value.strip():
                 continue
-            curie = _edam.lookup(value)
-            if curie:
-                terms[slot] = curie
-                justifications[slot] = _LEXICAL
-                unmatched.pop(slot, None)
+            if self._is_own_vocabulary(slot, value):
+                continue
+            resolution = _resolve_text(value, self._gene_index)
+            if resolution:
+                enrichment.record(slot, resolution)
             else:
-                unmatched[slot] = value
-
-        if terms:
-            out["ontology_terms"] = terms
-            out["ontology_term_justifications"] = justifications
-        if unmatched:
-            out["ontology_terms_unmatched"] = unmatched
+                enrichment.miss(slot, value)
+        enrichment.apply_to(out)
         return out
