@@ -1,7 +1,7 @@
 """Maintainer script: regenerate ``edam_index.json`` from EDAM via EBI OLS4.
 
 The index is the label spine ``_edam.py`` matches claim text against, and the
-same walk emits the ``subtopics`` list that becomes ``GenomicsAdapter.subdomains``.
+same walk emits the ``subtopics`` list ``_edam.subtopics()`` reports.
 It is cut from a recorded set of EDAM roots: each root contributes itself and its
 direct subclasses, and each of those contributes its preferred label plus every
 exact synonym EDAM records. Nothing is hand-added -- a label that EDAM does not

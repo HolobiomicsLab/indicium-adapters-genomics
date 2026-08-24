@@ -103,11 +103,11 @@ class GenomicsAdapter:
     recognition of *entity* identifiers (variant, gene, transcript, protein)
     already sitting in a claim slot.
 
-    ``subdomains`` are read off the same EDAM walk that builds the concept index
-    rather than hand-listed, so the vocabulary is the field's, moves with an EDAM
-    release, and cannot drift from the labels ``enrich_claim`` resolves against.
-    ``techniques`` are curated: EDAM models assays as operations and data rather
-    than as a technique hierarchy, so there is nothing to derive.
+    ``subdomains`` and ``techniques`` are both curated. Neither is derived: the
+    EDAM walk in ``data/build_edam_index.py`` reaches a root and its direct
+    subclasses only, and sorts what it finds, so it can produce neither the
+    audited set nor its order. ``_edam.subtopics()`` still records what that
+    walk yields, but it no longer feeds this declaration.
 
     Every qualifier matches ``^[a-z][a-z0-9_]*$`` (snake_case), required because
     Perspicacite routes adapter qualifiers onto the open ``asb:domainQualifier``
@@ -154,29 +154,25 @@ class GenomicsAdapter:
 
     ontology_prefixes: dict[str, str] = dict(GENOMICS_PREFIXES)
 
-    @property
-    def subdomains(self) -> tuple[str, ...]:
-        """EDAM's own sub-topics of Genomics, lower-cased and hyphenated."""
-        return _edam.subtopics()
+    # Fixed by the 2026-08-25 cross-domain vocabulary audit: a term two
+    # sciences both declare cannot tell them apart, so shared terms were dropped.
+    subdomains: tuple[str, ...] = (
+        "genetic-variation",
+        "dna-polymorphism",
+        "structural-variation",
+        "gene-structure",
+        "mobile-genetic-elements",
+        "comparative-genomics",
+        "population-genomics",
+    )
 
-    # Curated -- EDAM has no technique hierarchy to read.
+    # Same audit, same rule -- each survivor is a form only genomics utters.
     techniques: tuple[str, ...] = (
-        "whole-genome-sequencing",
-        "whole-exome-sequencing",
-        "targeted-sequencing",
-        "long-read-sequencing",
-        "short-read-sequencing",
-        "single-cell-sequencing",
-        "hi-c",
-        "optical-mapping",
+        "genome-assembly",
+        "genome-annotation",
         "genotyping-array",
-        "amplicon-sequencing",
-        "shotgun-metagenomics",
-        "rna-seq",
-        "chip-seq",
-        "atac-seq",
-        "bisulfite-sequencing",
-        "crispr-screen",
+        "nanopore-sequencing",
+        "smrt-sequencing",
     )
 
     def __init__(self, gene_index: GeneIndex | None = None) -> None:

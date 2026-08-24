@@ -89,9 +89,9 @@ and is registered under the `indicium.adapters` entry-point group.
   through `GeneIndex.is_available`, so it never reads as "checked, no such gene".
 
 - `data/build_edam_index.py` regenerates `edam_index.json` from EDAM through
-  EBI OLS4, and emits the `subdomains` slug list off the same walk so the
-  classification vocabulary cannot drift from the labels enrichment resolves
-  against. Stdlib only, maintainer-only:
+  EBI OLS4, and emits the `subtopics` slug list off the same walk. That list
+  no longer feeds `GenomicsAdapter.subdomains`, which the 2026-08-25
+  cross-domain vocabulary audit fixed by hand. Stdlib only, maintainer-only:
 
       python -m indicium_adapters_genomics.data.build_edam_index
 

@@ -16,8 +16,8 @@ gene / transcript / variant identifiers that sit inside a claim slot.
 | Attribute | Source |
 |---|---|
 | `primary_domain` | `genomics` — without this, a genomics paper classifies as `other` in AgenticScienceBuilder |
-| `subdomains` | read from the generated EDAM index (`data/build_edam_index.py`), not a parallel hand-list |
-| `techniques` | curated — EDAM models assays as operations and data, not as a technique hierarchy |
+| `subdomains` | curated — the set the 2026-08-25 cross-domain vocabulary audit fixed, no longer read off the EDAM walk |
+| `techniques` | curated — same audit; EDAM models assays as operations and data, not as a technique hierarchy |
 | `qualifiers` | curated domain claim qualifiers, all snake_case, covering variant calls, differential expression, assembly metrics and annotation |
 | `ontology_prefixes` | prefix → base IRI (`_namespaces.py`): SO, GO, GENO, OBI, EFO, NCBITaxon, UBERON, EDAM, HGNC, Ensembl, RefSeq, NCBI Gene, dbSNP, ClinVar (VCV / `.record` / `.submission`), ENA, SRA, GEO, ArrayExpress, BioProject |
 | `enrich_claim` | identifier grammars → gene nomenclature → EDAM labels, each exact-match |
@@ -94,7 +94,7 @@ The `indicium.adapters` entry point makes it discoverable via
 
 - `data/edam_index.json` — `python -m
   indicium_adapters_genomics.data.build_edam_index`. Reads EDAM through EBI
-  OLS4, records the roots it was cut from, and emits the `subdomains` list off
+  OLS4, records the roots it was cut from, and emits the `subtopics` list off
   the same walk. Regenerate on an EDAM release.
 - `data/gene_index.tsv` — see above; `python -m
   indicium_adapters_genomics.data.build_gene_index`.
