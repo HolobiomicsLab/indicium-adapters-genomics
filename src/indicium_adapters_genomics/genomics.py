@@ -173,6 +173,12 @@ class GenomicsAdapter:
         "genotyping-array",
         "nanopore-sequencing",
         "smrt-sequencing",
+        # Restored after the first audit pass dropped them as collateral rather
+        # than by measurement: neither is claimed by any other installed
+        # science, and without them a whole-genome or exome tool matches
+        # nothing its own field declares.
+        "whole-genome-sequencing",
+        "exome-sequencing",
     )
 
     def __init__(self, gene_index: GeneIndex | None = None) -> None:
