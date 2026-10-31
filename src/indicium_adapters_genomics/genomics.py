@@ -164,6 +164,18 @@ class GenomicsAdapter:
         "mobile-genetic-elements",
         "comparative-genomics",
         "population-genomics",
+        # Issue #1: eight in-domain EDAM topics the harvest carries but this
+        # adapter never uttered. Together with the four techniques added below,
+        # they take the genomics silent share over genomics_verified.json from
+        # 51.5% to 38.1% of judgeable rows (admitted 1,921 -> 2,459).
+        "genetics",
+        "phylogenetics",
+        "population-genetics",
+        "phylogeny",
+        "gwas-study",
+        "phylogenomics",
+        "copy-number-variation",
+        "molecular-genetics",
     )
 
     # Same audit, same rule -- each survivor is a form only genomics utters.
@@ -179,6 +191,15 @@ class GenomicsAdapter:
         # nothing its own field declares.
         "whole-genome-sequencing",
         "exome-sequencing",
+        # Issue #1, same measurement: four more measured in-domain topics,
+        # none claimed by any other installed science. The issue's fifth
+        # candidate, the bare term "mapping", is deliberately left out: a
+        # single common word is over-permissive under the containment matcher
+        # domain_admission uses, and it buys only a further 38.1% -> 36.7%.
+        "genotype-and-phenotype",
+        "sequence-assembly",
+        "oxford-nanopore",
+        "pacbio",
     )
 
     def __init__(self, gene_index: GeneIndex | None = None) -> None:
