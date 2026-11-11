@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- 2026-11-11: CI and development installs now use the published dependencies from PyPI.
+
 ## [0.3.0] — 2026-08-22
 
 An adversarial review of 0.2.0. Every item below is a defect that was found and

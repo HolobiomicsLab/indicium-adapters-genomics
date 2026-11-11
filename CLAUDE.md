@@ -115,8 +115,8 @@ entry point is only registered by an install.
 
 ## Repo relationships
 
-- The core Protocol lives in `~/git/indicium-adapters` (do not vendor it).
-- `~/git/indicium-adapters-transcriptomics` owns the non-human nomenclature join
+- The core Protocol lives in the `indicium-adapters` sibling repository (do not vendor it).
+- The `indicium-adapters-transcriptomics` sibling repository owns the non-human nomenclature join
   (MGI, FlyBase, WormBase, ZFIN) and its own gene index. Do not duplicate it.
   Its prefix table is the reference spelling for every prefix the two share —
   except `edam`, lower-case here and in the proteomics sibling because that is

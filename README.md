@@ -83,8 +83,10 @@ GenomicsAdapter(GeneIndex.from_tsv("/data/hgnc_index.tsv"))
 
 ## Install
 
+The public dependencies are installed from PyPI with the development extra:
+
 ```bash
-uv pip install -e .
+python -m pip install -e ".[dev]"
 ```
 
 The `indicium.adapters` entry point makes it discoverable via
