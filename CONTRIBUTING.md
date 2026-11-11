@@ -7,11 +7,13 @@ Thanks for your interest!
 ```bash
 git clone https://github.com/HolobiomicsLab/indicium-adapters-genomics
 cd indicium-adapters-genomics
-pip install -e .[dev]
 ```
 
-`indicium-adapters` is not on PyPI yet; install it from git first (see
-`.github/workflows/ci.yml` for the exact commands CI uses).
+The public dependencies are installed from PyPI with the development extra:
+
+```bash
+python -m pip install -e ".[dev]"
+```
 
 ## Development workflow
 

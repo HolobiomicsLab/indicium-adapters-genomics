@@ -38,13 +38,6 @@ Repository = "https://github.com/HolobiomicsLab/indicium-adapters-genomics"
 Issues = "https://github.com/HolobiomicsLab/indicium-adapters-genomics/issues"
 Changelog = "https://github.com/HolobiomicsLab/indicium-adapters-genomics/blob/main/CHANGELOG.md"
 
-# Local-dev resolution for the sibling repos (neither is on PyPI). uv-only and
-# stripped from the published wheel; mirrors indicium-adapters' own table.
-# Without this, `uv pip install -e .` cannot resolve indicium-adapters at all.
-[tool.uv.sources]
-indicium-standard = { path = "../indicium", editable = true }
-indicium-adapters = { path = "../indicium-adapters", editable = true }
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/indicium_adapters_genomics"]
 
